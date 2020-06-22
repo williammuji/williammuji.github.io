@@ -1,0 +1,140 @@
+---
+layout: post
+title:  "Unicode"
+date: 2020-06-18 16:46:27 +0800
+categories: jekyll update
+---
+
+1. 定义
+2. Code point planes and blocks
+3. 实现方式
+4. 中文字符集
+5. C++ standard 编码转换
+6. boost 编码转换
+7. jsoncpp 编码转换
+
+
+## 1.定义
+> Unicode is an information technology (IT) standard for the consistent encoding, representation, and handling of text expressed in most of the world\'s writing systems.
+
+Unicode 13.0 (consist of 143,696 graphic characters and 163 format characters) covering 154 modern and historic scripts, as well as multiple symbol sets and emoji.
+
+为每一个「字符」分配一个唯一的 ID（学名为码位 / 码点 / Code Point）
+
+## 2.Code point planes and blocks
+Unicode comprises 1,114,112 code points in the range 0x0 to 0x10FFFF.
+
+The first 128 Unicode code points represent the ASCII characters, which means that any ASCII text is also a UTF-8 text.
+
+The Unicode code space is divided into seventeen planes (the basic multilingual plane, and 16 supplementary planes), each with 65,536(2^16) code points. Thus the total size of the Unicode code space is 17 × 65,536 = 1,114,112.
+
+Plane 0 called Basic Multilingual Plane(BMP)(基本多文种平面)
+
+
+Plane 0 | Plane 1 | Plane 2 | Plane 3 | Planes 4–13 | Plane 14 | Planes 15–16
+------- | ------- | ------- | ------- | ----------- | -------- | ------------
+0000–FFFF | 10000–1FFFF | 20000–2FFFF | 30000–3FFFF | 40000–DFFFF | E0000–EFFFF | F0000–10FFFF
+
+
+## 3.实现方式
+Unicode can be implemented by different character encodings. The Unicode standard defines UTF-8, UTF-16, and UTF-32, and several other encodings are in use.
+
+将「码位」转换为字节序列的规则（编码/解码 可以理解为 加密/解密 的过程）
+
+#### UTF-8
+> UTF-8, the dominant encoding on the World Wide Web (used in over 95% of websites as of 2020, and up to 100% for some languages) uses one byte for the first 128 code points, and up to 4 bytes for other characters.
+
+> The first 128 Unicode code points represent the ASCII characters, which means that any ASCII text is also a UTF-8 text.
+
+#### UCS-2(Universal Character Set)
+> UCS-2 uses two bytes (16 bits) for each character but can only encode the first 65,536 code points.
+
+> With over 143,000 code points defined as of version 13.0, UCS-2 is only able to represent less than half of all encoded Unicode characters.
+
+#### UTF-16
+> UTF-16 extends UCS-2, by using the same 16-bit encoding as UCS-2 for the Basic Multilingual Plane, and a 4-byte encoding for the other planes.
+
+#### UCS-4/UTF-32
+> UTF-32 (also referred to as UCS-4) uses four bytes for each character.
+
+> UTF-32 is able to encode all Unicode code points. However, because each character uses four bytes, UTF-32 takes significantly more space than other encodings, and is not widely used.
+
+
+## 4.中文字符集
+#### GB2312
+> GB/T 2312，GB/T 2312–80 或 GB/T 2312–1980 是中华人民共和国国家标准简体中文字符集，全称《信息交换用汉字编码字符集·基本集》，通常简称GB，又称GB0，由中国国家标准总局发布，1981年5月1日实施。
+
+> GB/T 2312标准共收录6763个汉字，其中一级汉字3755个，二级汉字3008个；同时收录了包括拉丁字母、希腊字母、日文平假名及片假名字母、俄语西里尔字母在内的682个字符。
+
+> 每个汉字两个字节。
+
+#### GBK
+> 汉字内码扩展规范，称GBK，全名为《汉字内码扩展规范(GBK)》1.0版，由中华人民共和国全国信息技术标准化技术委员会1995年12月1日制订，国家技术监督局标准化司和电子工业部科技与质量监督司1995年12月15日联合以《技术标函[1995]229号》文件的形式公布。
+
+> GBK共收录21886个汉字和图形符号，其中汉字（包括部首和构件）21003个，图形符号883个。
+
+#### GB18030
+> GB 18030，全称《信息技术中文编码字符集》，是中华人民共和国国家标准所规定的变长多字节字符集。其对GB 2312-1980完全向后兼容，与GBK基本向后兼容，并支持Unicode（GB 13000）的所有码位。
+
+> GB 18030共收录汉字70,244个。
+
+> GB18030 is standardized in China and implements Unicode fully.
+
+> 采用变长多字节编码，每个字可以由1个、2个或4个字节组成。
+
+## 5.C++ standard 编码转换
+
+- std::wstring_convert performs conversions between byte string std::string and wide string.
+- The standard facets suitable for use with std::wstring_convert are std::codecvt_utf8 for UTF-8/UCS2 and UTF-8/UCS4 conversions and std::codecvt_utf8_utf16 for UTF-8/UTF-16 conversions.
+
+codecvt_byname | codecvt_utf8 | codecvt_utf16 | codecvt_utf8_utf16
+-------------- | ------------ | ------------- | ------------------
+creates a codecvt facet for the named locale | converts between UTF-8 and UCS2/UCS4 | converts between UTF-16 and UCS2/UCS4 | converts between UTF-8 and UTF-16
+none | (C++11)(deprecated in C++17) | (C++11)(deprecated in C++17) | (C++11)(deprecated in C++17)
+
+```cpp
+//从GB2312转为UTF-8
+using namespace std;
+
+template<typename Facet>
+struct deletable_facet : Facet
+{
+  using Facet::Facet;
+  ~deletable_facet(){}
+};
+
+//其他编码和本地化宽字符的转换
+typedef deletable_facet<codecvt_byname<wchar_t, char, mbstate_t>> F;
+wstring_convert<F> cv1(new F("zh_CN.GB2312"));
+wstring wide_str = cv1.from_bytes("你好");
+//本地化的宽字符wstring转为UTF-8
+wstring_covert<codecvt_utf8<wchar_t>> cv2;
+string utf8_str = cv2.to_bytes(wide_str);
+```
+
+## 6.boost 编码转换
+
+```cpp
+std::string utf8_string = to_utf<char>(latin1_string,"Latin1");
+std::wstring wide_string = to_utf<wchar_t>(latin1_string,"Latin1");
+std::string latin1_string = from_utf(wide_string,"Latin1");
+std::string utf8_string2 = utf_to_utf<char>(wide_string);
+``` 
+
+```cpp
+//从GB2312转为UTF-8
+using namespace std;
+std::string utf8_str = boost::locale::conv::to_utf<char>("你好", "GB2312");
+``` 
+
+## 7.jsoncpp 编码转换 
+
+```cpp
+//Converts a unicode code-point to UTF-8.
+static inline String codePointToUTF8(unsigned int cp); 
+
+//Converts a UTF-8 to Unicode string 
+String valueToQuotedString(const char* value) {
+  return valueToQuotedStringN(value, static_cast<unsigned int>(strlen(value)));
+}
+```
