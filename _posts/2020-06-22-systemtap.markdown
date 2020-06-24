@@ -190,7 +190,7 @@ probe timer.s(10) {
 
 ## 3.效果图
 
-![Image of memory_leaks](http://williammuji.github.io:4000/images/memory_leaks_flame_graph.jpg)
+![Image of memory_leaks](http://williammuji.github.io/images/memory_leaks_flame_graph.jpg)
 
 ## 4.分析
 
@@ -292,7 +292,7 @@ Max stack size  8388608         unlimited       bytes
 [How The Kernel Manages Your Memory](https://manybutfinite.com/post/how-the-kernel-manages-your-memory/)
 
 
-![x86_32](https://williammuji.github.io:4000/images/x86_32_memory_layout.png)
+![x86_32](https://williammuji.github.io/images/x86_32_memory_layout.png)
 
 
  - x86_64
@@ -305,9 +305,9 @@ Max stack size  8388608         unlimited       bytes
 
 下图为48-bits addresses:
 
-![x86_64](https://williammuji.github.io:4000/images/x86_64_memory_layout.png)
+![x86_64](https://williammuji.github.io/images/x86_64_memory_layout.png)
 
 48-bits 
-![x86_64 48-bits](https://williammuji.github.io:4000/images/x86_64_48_bit.png)
+![x86_64 48-bits](https://williammuji.github.io/images/x86_64_48_bit.png)
 56-bits
-![x86_64 56-bits](https://williammuji.github.io:4000/images/x86_64_56_bit.png)
+![x86_64 56-bits](https://williammuji.github.io/images/x86_64_56_bit.png)
