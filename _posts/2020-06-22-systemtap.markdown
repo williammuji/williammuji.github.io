@@ -10,6 +10,8 @@ categories: jekyll update
 3. 效果图
 4. 分析
 5. 进程内存分布
+6. libc probes
+7. Memory Leak (and Growth) Flame Graphs
 
 ## 1.安装
 
@@ -311,3 +313,179 @@ Max stack size  8388608         unlimited       bytes
 ![x86_64 48-bits](https://williammuji.github.io/images/x86_64_48_bit.png)
 56-bits
 ![x86_64 56-bits](https://williammuji.github.io/images/x86_64_56_bit.png)
+
+## 6.libc probes
+
+RHEL7以上，glibc支持了SystemTap user-space markers，这样就可以probe glibc内存分配，线程管理。
+
+[Memory Allocation Probes](https://www.gnu.org/software/libc/manual/html_node/Memory-Allocation-Probes.html)
+
+[glibc standard library User-Space Markers](https://sourceware.org/systemtap/wiki/glibcMarkers)
+
+Probe: memory_sbrk_more (void *$arg1, size_t $arg2)
+>This probe is triggered after the main arena is extended by calling sbrk. Argument $arg1 is the additional size requested to sbrk, and $arg2 is the pointer that marks the end of the sbrk area, returned in response to the request.
+
+Probe: memory_sbrk_less (void *$arg1, size_t $arg2)
+>This probe is triggered after the size of the main arena is decreased by calling sbrk. Argument $arg1 is the size released by sbrk (the positive value, rather than the negative value passed to sbrk), and $arg2 is the pointer that marks the end of the sbrk area, returned in response to the request.
+
+Probe: memory_heap_new (void *$arg1, size_t $arg2)
+>This probe is triggered after a new heap is mmaped. Argument $arg1 is a pointer to the base of the memory area, where the heap_info data structure is held, and $arg2 is the size of the heap.
+
+Probe: memory_heap_free (void *$arg1, size_t $arg2)
+>This probe is triggered before (unlike the other sbrk and heap probes) a heap is completely removed via munmap. Argument $arg1 is a pointer to the heap, and $arg2 is the size of the heap.
+
+Probe: memory_heap_more (void *$arg1, size_t $arg2)
+>This probe is triggered after a trailing portion of an mmaped heap is extended. Argument $arg1 is a pointer to the heap, and $arg2 is the new size of the heap.
+
+Probe: memory_heap_less (void *$arg1, size_t $arg2)
+>This probe is triggered after a trailing portion of an mmaped heap is released. Argument $arg1 is a pointer to the heap, and $arg2 is the new size of the heap.
+
+
+
+```
+#glibc内存管理probe
+#glibc-malloc.stp
+#! /usr/bin/env stap
+
+# http://developerblog.redhat.com/2015/01/06/malloc-systemtap-probes-an-example/
+
+
+global sbrk, waits, arenalist, mmap_threshold = 131072, heaplist
+  
+  
+# sbrk accounting
+  
+probe process("/lib*/libc.so.6").mark("memory_sbrk_more")
+{
+  sbrk += $arg2
+}
+  
+probe process("/lib*/libc.so.6").mark("memory_sbrk_less")
+{
+  sbrk -= $arg2
+}
+
+
+# threshold tracking
+
+probe process("/lib*/libc.so.6").mark("memory_mallopt_free_dyn_thresholds")
+{
+  printf("%d: New thresholds: mmap: %ld bytes, trim: %ld bytes\n", tid(), $arg1,
+         $arg2)
+  mmap_threshold = $arg1
+}
+
+
+# arena accounting
+
+probe process("/lib*/libc.so.6").mark("memory_arena_new")
+{
+  printf ("%d: Created new arena\n", tid())
+  arenalist[$arg1, tid()] = 1
+}
+
+probe process("/usr/lib*/libc.so.6").mark("memory_arena_reuse_wait")
+{
+  waits[tid()]++
+}
+
+probe process("/usr/lib*/libc.so.6").mark("memory_arena_reuse")
+{
+  if ($arg2 != 0)
+    {
+      printf ("%d: failed to allocate on own arena, trying another\n", tid())
+      arenalist[$arg1, tid()] = 1
+    }
+}
+
+probe process("/usr/lib*/libc.so.6").mark("memory_arena_reuse_free_list")
+{
+  arenalist[$arg1, tid()] = 1
+}
+
+probe process.thread.end
+{
+  /* Find the thread and mark its arena as unused.  */
+  %( systemtap_v >= "2.6"
+  %?
+    delete arenalist[*, tid()]
+  %:
+    foreach ([a, t] in arenalist)
+      if (t == tid())
+        break
+    delete arenalist[a, t]
+  %)
+}
+
+
+# heap accounting
+
+probe process("/usr/lib*/libc.so.6").mark("memory_heap_new")
+{
+  printf("%d: New heap\n", tid());
+  heaplist[$arg1] = $arg2
+}
+
+probe process("/usr/lib*/libc.so.6").mark("memory_heap_more")
+{
+  heaplist[$arg1] = $arg2
+}
+
+probe process("/usr/lib*/libc.so.6").mark("memory_heap_less")
+{
+  heaplist[$arg1] = $arg2
+}
+
+probe process("/usr/lib*/libc.so.6").mark("memory_heap_free")
+{
+  delete heaplist[$arg1]
+}
+
+
+# reporting
+
+probe begin
+{
+  if (target() == 0) error ("please specify target process with -c / -x")
+}
+
+probe end
+{
+  printf ("malloc information for pid %d\n", target())
+  printf ("Contention: \n")
+  foreach (t in waits)
+  printf ("\t%d: %d waits\n", t, waits[t])
+  
+  print("Active arenas:\n")
+  foreach ([a, t] in arenalist)
+  {
+    if (arenalist[a, t])
+      printf ("\t%d -> %p\n", t, a)
+  }
+  
+  print ("Allocated heaps:\n")
+  foreach (h in heaplist)
+  {
+    if (heaplist[h])
+      printf ("\t%p -> %ld bytes\n", h, heaplist[h])
+  }
+  
+  printf ("Total sbrk: %ld bytes\n", sbrk)
+  printf ("Mmap threshold in the end: %ld kb\n", mmap_threshold / 1024)
+}
+```
+
+## 7.Memory Leak (and Growth) Flame Graphs
+
+[Memory Leak (and Growth) Flame Graphs](http://www.brendangregg.com/FlameGraphs/memoryflamegraphs.html)
+
+Brendan Gregg介绍了4种可以线上检测内存泄露方法。
+
+1 stap/perf/bcc malloc
+
+2 perf/bcc brk(不用sbrk，是因为brk只会grow，不会shrink)
+>On Linux, sbrk() is implemented as a library function that uses the brk() system call, and does some internal bookkeeping so that it can return the old break value.
+
+3 perf/bcc mmap(mmap还会有对应的munmap，所以也是看个趋势)
+
+4 perf/bcc page-faults(brk和mmap检测的是virtual memory扩张，page-faults检测的是物理内存)
