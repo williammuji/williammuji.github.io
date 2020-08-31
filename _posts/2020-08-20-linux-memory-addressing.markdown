@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Memory addressing"
+title:  "Linux memory addressing"
 date: 2020-08-28 12:00:00 +0800
 categories: jekyll update
 ---
@@ -11,12 +11,12 @@ categories: jekyll update
 4. 硬件中的分页
 5. Linux中的分页
 
-我以前导师教导我们学习，首先要搞清楚概念定义是什么，这句话深深印入我脑海。
+我以前导师教导我们学习，首先要搞清楚概念定义是什么。
 
 刘未鹏提出，学习一项知识，必须问自己三个重要问题：1. 它的本质是什么。2. 它的第一原则是什么。3. 它的知识结构是怎样的。
 [一直以来伴随我的一些学习习惯(一)：学习与思考](http://mindhacks.cn/2008/07/08/learning-habits-part1/)
 
-感觉差不多，我自己摸索演化:
+我自己摸索演化:
 
 1.What 2.Why 3.How
 
@@ -52,12 +52,12 @@ categories: jekyll update
 2、内存使用效率低，为了支持多进程，物理内存有限，需要不时调换进程所用内存到磁盘。
 
 3、进程每次运行，都需要足够大空闲内存，这块内存位置是不确定的，这会带来重定位问题，
-也就是程序中变了和函数的地址重定位。
+也就是程序中变量和函数的地址重定位。
 
 所以需要引入一个中间层来解决，于是virtual address
 每个进程有自己独立的虚拟地址，这样所有进程地址隔离，也不存在重定位问题。
 
-那么从逻辑地址怎么映射到线性地址（虚拟地址），就引入了分段技术。
+那么从逻辑地址怎么映射到线性地址（虚拟地址），引入了分段技术。
 从线性地址（虚拟地址）映射到物理地址，引入了分页技术。
 它由内存控制单元(MMU)控制。
 
@@ -89,7 +89,7 @@ GDT和LDT放在内存中，为了加速逻辑地址到线性地址转换，于�
 2、segment selector头13位index字段计算段描述符的地址，index乘于8（段描述符大小），这个结果与第1步骤计算结果相加
 获取段描述符数据
 
-3、根据第2步骤所得段描述符Base字段的数值+逻辑地址段内offset就算的线性地址
+3、根据第2步骤所得段描述符Base字段的数值+逻辑地址段内offset就算出线性地址
 
 ![Segmentation Unit](https://williammuji.github.io/images/segment-unit.png)
 
@@ -136,6 +136,7 @@ Pentium模型开始，80x86微处理器引入扩展分页，它允许页框大�
 ![Extended paging](https://williammuji.github.io/images/extened-paging.jpg)
 
 4.3 硬件高速缓存
+
 动态RAM芯片的存取时间是微处理器时钟周期的数百倍。这意味着，从RAM取操作数或存放结果，CPU要等很久。
 
 为了缩小CPU和RAM速度不匹配，引入硬件高速缓存内存(hardware cache memory)。
