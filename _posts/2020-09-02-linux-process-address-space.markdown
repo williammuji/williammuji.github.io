@@ -40,9 +40,13 @@ address space由允许进程使用的全部线性地址组成。每个进程所�
 如果从进程的地址空间删除一个线性地址空间，内核就要调整受影响的线性区大小。有些情况下，调整大小迫使一个线性区被分成两个更小
 的部分。
 
-进程所拥有的所有线性区是通过一个简单的链表链接在一起，出现在链表中的线性区是按内存地址的升序排列的，不过每两个先行区可以由未用
+![Adding or removing a linear address interval](https://williammuji.github.io/images/adding-removing-linear-address-interval.jpg)
+
+进程所拥有的所有线性区是通过一个简单的链表链接在一起，出现在链表中的线性区是按内存地址的升序排列的，不过每两个线性区可以由未用
 的内存地址区隔开。每个vm_area_struct元素的vm_next字段指向链表的下一个元素。内核通过进程的内存描述符的mmap字段来查找线性区，其中
 mmap字段指向链表中的第一个线性区描述符。
+
+![Descriptors releated to the address space of a process](https://williammuji.github.io/images/descriptors-process-address-space.jpg)
 
 内核频繁执行的一个操作就是查找包含指定线性地址的线性区。由于链表是经过排序的，因此只要在指定线性地址之后找到一个线性区，搜索就
 可以结束。然而当进程的线性区非常少的时候使用这种链表才是方便的，在链表中查找元素、插入元素、删除元素涉及到许多操作，这些操作所
@@ -53,14 +57,10 @@ mmap字段指向链表中的第一个线性区描述符。
 是高效的。Linux既使用了链表，也使用了红黑树。这两种数据结构包含指向同一线性区描述符的指针，当插入或删除一个线性区描述符时，内核
 通过红黑树搜索前后元素，并用搜索结果快速更新链表而不用扫描链表。
 
-![Adding or removing a linear address interval](https://williammuji.github.io/images/adding-removing-linear-address-interval.jpg)
 
-![Descriptors releated to the address space of a process](https://williammuji.github.io/images/descriptors-process-address-space.jpg)
+## 3. 缺页异常处理程序
 
-
-## 4. 缺页异常处理程序
-
-Page Fault异常处理程序必须区分以下两种情况：由编程错误引起的异常，由引用属于进程地址空间但还尚未分配物理页框的页引起的异常。
+Page Fault异常处理程序必须区分以下两种情况：由编程错误引起的异常，或者，由引用属于进程地址空间但还尚未分配物理页框的页引起的异常。
 
 **处理地址空间以外的错误地址**
 
