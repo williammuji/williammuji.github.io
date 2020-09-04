@@ -53,9 +53,9 @@ mmap字段指向链表中的第一个线性区描述符。
 是高效的。Linux既使用了链表，也使用了红黑树。这两种数据结构包含指向同一线性区描述符的指针，当插入或删除一个线性区描述符时，内核
 通过红黑树搜索前后元素，并用搜索结果快速更新链表而不用扫描链表。
 
-![Adding or removing a linear address interval](https://williammuji.github.io/images/adding-removing-linear-address.jpg)
+![Adding or removing a linear address interval](https://williammuji.github.io/images/adding-removing-linear-address-interval.jpg)
 
-![Descriptors releated to the address space of a process](https://williammuji.github.io/images/process-address-space-descriptors.jpg)
+![Descriptors releated to the address space of a process](https://williammuji.github.io/images/descriptors-process-address-space.jpg)
 
 
 ## 4. 缺页异常处理程序
@@ -85,6 +85,6 @@ VM-FAULT-MAJOR表示缺页迫使当前进程睡眠，阻塞当前进程的缺页
 
 
 
-![Overall scheme for the Page Fault handler](https://williammuji.github.io/images/page-fault-switch.png)
+![Overall scheme for the Page Fault handler](https://williammuji.github.io/images/overall-page-fault-handler.jpg)
 
-[The flow diagram of the Page Fault handler](https://williammuji.github.io/images/page-fault-handler.jpg)
+![The flow diagram of the Page Fault handler](https://williammuji.github.io/images/page-fault-handler.jpg)
