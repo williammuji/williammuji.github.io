@@ -87,4 +87,4 @@ VM-FAULT-MAJOR表示缺页迫使当前进程睡眠，阻塞当前进程的缺页
 
 ![Overall scheme for the Page Fault handler](https://williammuji.github.io/images/page-fault-handler.jpg)
 
-![The flow diagram of the Page Fault handler](https://williammuji.github.io/images/page-fault-handler.jpg)
+![The flow diagram of the Page Fault handler](https://williammuji.github.io/images/page-fault-handler-diagram.gif)
