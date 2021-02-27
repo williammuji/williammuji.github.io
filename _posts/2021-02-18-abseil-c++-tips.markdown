@@ -4316,8 +4316,10 @@ if (auto [iter, ins] = m.try_emplace(key, data); ins) {
 ```
 另一个例子来自于使用C++17的node handle，它允许真正的在map或set之间移动元素而不需要复制。
 这个特性定义了一个可解构的insert-return-type，它是插入节点句柄的结果。
+
 ```cpp
-if (auto [iter, ins, node] = m2.insert(m1.extract(k)); ins) {
+if (auto [iter, ins, node] = m2.insert(m1.extract(k)); ins) 
+{
   std::cout << "Element with key '" << k << "' transferred successfully";
 } else if (!node) {
   std::cerr << "Key '" << k << "' does not exist in first map.";
@@ -4325,13 +4327,15 @@ if (auto [iter, ins, node] = m2.insert(m1.extract(k)); ins) {
   std::cerr << "Key '" << k << "' already in m2; m2 unchanged; m1 changed.";
 }
 ```
-extract is the only way to change a key of a map element without reallocation:
+
+extract is the only way to change a key of a map element without reallocation
+
 ```cpp
-map<int, string> m{{1, "mango"}, {2, "papaya"}, {3, "guava"}};
+map<int, string> m{\{1, "mango"\}, \{2, "papaya"\}, \{3, "guava"\}};
 auto nh = m.extract(2);
 nh.key() = 4;
 m.insert(move(nh));
-// m == {{1, "mango"}, {3, "guava"}, {4, "papaya"}}
+// m == {\{1, "mango"\}, \{3, "guava"\}, \{4, "papaya"\}}
 ```
 
 ## 186. Prefer to Put Functions in the Unnamed Namespace
