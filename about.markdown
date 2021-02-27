@@ -4,4 +4,4 @@ title: About
 permalink: /about/
 ---
 
-Linux server engineer / Game developper
+Linux server engineer / Game developer

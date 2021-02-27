@@ -1,9 +1,4 @@
--sync-signal-safe.markdown  2020-09-02-linux-process-address-space.markdown  2020-09-17-memory-allocator.markdown
-ubuntu@jwill:~/codebase/williammuji.github.io/_posts$ vi
-
-
-
---
+---
 layout: post
 title:  "Abseil C++ Tips"
 date: 2021-02-18 10:00:00 +0800
