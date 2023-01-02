@@ -97,7 +97,7 @@ table td { border: 1px solid #e8e8e8; }
 /** Site footer */
 .site-footer { border-top: 1px solid #e8e8e8; padding: 30px 0; }
 
-.footer-heading { font-size: 18px; margin-bottom: 15px; }
+/**.footer-heading { font-size: 18px; margin-bottom: 15px; }**/
 
 .contact-list, .social-media-list { list-style: none; margin-left: 0; }
 
